@@ -1,6 +1,8 @@
 package runtime
 
 import (
+	"mini-docker/cgroup"
+	"mini-docker/cgroup/subsystems"
 	"mini-docker/container"
 	"os"
 	"strings"
@@ -8,16 +10,21 @@ import (
 	"go.uber.org/zap"
 )
 
-func Run(tty bool, args []string) {
+func Run(tty bool, args []string, cfg *subsystems.ResourceConfig) {
 	parent, writePipe, err := container.NewParentProcess(tty)
 	if err != nil {
 		zap.L().Error("new parent process error", zap.String("error", err.Error()))
-		return 
+		return
 	}
 	if err := parent.Start(); err != nil {
 		zap.L().Error("parent process don't start")
-		return 
+		return
 	}
+	// set resource limit
+	cgroupManager := cgroup.NewCgroupManager("mini-docker")
+	defer cgroupManager.Destroy()
+	cgroupManager.Set(cfg)
+	cgroupManager.Apply(parent.Process.Pid)
 	err = sendInitCMD(args, writePipe)
 	if err != nil {
 		zap.L().Error("don't send command to child process", zap.String("error", err.Error()))
