@@ -30,6 +30,9 @@ func Run(tty bool, args []string, cfg *subsystems.ResourceConfig) {
 		zap.L().Error("don't send command to child process", zap.String("error", err.Error()))
 	}
 	parent.Wait()
+	// delete overlayf
+	rootURL, mntURL := "/home/hellozmc/download", "/home/hellozmc/busybox"
+	container.DeleteWorkSpace(rootURL, mntURL)
 	os.Exit(0)
 }
 
