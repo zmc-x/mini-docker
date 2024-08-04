@@ -27,6 +27,7 @@ func NewParentProcess(tty bool) (*exec.Cmd, *os.File, error) {
 		cmd.Stderr = os.Stderr
 	}
 	cmd.ExtraFiles = []*os.File{r}
+	cmd.Dir = "/home/hellozmc/busybox"
 	return cmd, w, nil
 }
 

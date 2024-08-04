@@ -17,7 +17,7 @@ func Run(tty bool, args []string, cfg *subsystems.ResourceConfig) {
 		return
 	}
 	if err := parent.Start(); err != nil {
-		zap.L().Error("parent process don't start")
+		zap.L().Error("parent process don't start", zap.String("error", err.Error()))
 		return
 	}
 	// set resource limit
