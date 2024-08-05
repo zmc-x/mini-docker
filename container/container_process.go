@@ -78,10 +78,10 @@ func createOverlayfsLower(rootURL string) error {
 // create overlayfs upper and work
 func createOverlayfsDirs(rootURL string) error {
 	upper, work := filepath.Join(rootURL, "upper"), filepath.Join(rootURL, "work")
-	if err := os.Mkdir(upper, 0777); err != nil {
+	if err := os.Mkdir(upper, 0777); err != nil && os.IsNotExist(err) {
 		return fmt.Errorf("mkdir %s failed, error is %v", upper, err)
 	}
-	if err := os.Mkdir(work, 0777); err != nil {
+	if err := os.Mkdir(work, 0777); err != nil && os.IsNotExist(err) {
 		return fmt.Errorf("mkdir %s failed, error is %v", upper, err)
 	}
 	return nil
@@ -89,7 +89,7 @@ func createOverlayfsDirs(rootURL string) error {
 
 // mount to rootMnt
 func mountOverlayfs(rootURL, rootMnt string) error {
-	if err := os.Mkdir(rootMnt, 0777); err != nil {
+	if err := os.Mkdir(rootMnt, 0777); err != nil && os.IsNotExist(err) {
 		return fmt.Errorf("mkdir %s failed, error is %v", rootMnt, err)
 	}
 
