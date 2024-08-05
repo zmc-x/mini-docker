@@ -18,15 +18,15 @@ var (
 				CpuSet:      cpuset,
 				CpuShare:    cpushare,
 			}
-			runtime.Run(ti, args, cfg)
+			runtime.Run(ti, volume, args, cfg)
 			return nil
 		},
 		Args: cobra.MinimumNArgs(1),
 	}
 
 	initCmd = &cobra.Command{
-		Use:   "init",
-		Short: "init command init the container, don't call outside",
+		Use:    "init",
+		Short:  "init command init the container, don't call outside",
 		Hidden: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return container.ContainerInit()
@@ -35,7 +35,10 @@ var (
 )
 
 var (
-	ti       bool
+	// generic
+	ti     bool
+	volume string
+	// cgroup
 	m        string
 	cpuset   string
 	cpushare string
@@ -47,4 +50,5 @@ func init() {
 	runCmd.Flags().StringVar(&m, "m", "", "set memory limit")
 	runCmd.Flags().StringVar(&cpuset, "cpuset", "", "set the cgroup process can be used in the CPU and memory")
 	runCmd.Flags().StringVar(&cpushare, "cpushare", "", "set the cpu schedule for the processes in cgroup")
+	runCmd.Flags().StringVarP(&volume, "volume", "v", "", "set the volume of the container")
 }

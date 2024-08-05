@@ -1,10 +1,12 @@
 package container
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"go.uber.org/zap"
@@ -12,8 +14,10 @@ import (
 
 const PrgPath = "/proc/self/exe"
 
+var ErrCreateWorkSpace = errors.New("create overlayfs work space error")
+
 // parent process
-func NewParentProcess(tty bool) (*exec.Cmd, *os.File, error) {
+func NewParentProcess(tty bool, volumePath string) (*exec.Cmd, *os.File, error) {
 	r, w, err := createPipe()
 	if err != nil {
 		return nil, nil, err
@@ -32,28 +36,48 @@ func NewParentProcess(tty bool) (*exec.Cmd, *os.File, error) {
 	}
 	cmd.ExtraFiles = []*os.File{r}
 	rootURL, mntURL := "/home/hellozmc/download", "/home/hellozmc/busybox"
-	NewWorkSpace(rootURL, mntURL)
+	err = NewWorkSpace(rootURL, mntURL, volumePath)
+	if err != nil {
+		return nil, nil, err
+	}
 	cmd.Dir = mntURL
 	return cmd, w, nil
 }
 
 // overlayfs
 // lowerdir + upperdir + workdir + mergedir
-func NewWorkSpace(rootURL, mntURL string) {
+func NewWorkSpace(rootURL, mntURL, volumeURL string) error {
 	if err := createOverlayfsLower(rootURL); err != nil {
 		zap.L().Error("create overlayfs lower error", zap.String("error", err.Error()))
-		return
+		return ErrCreateWorkSpace
 	}
-
+	zap.L().Info("create overlayfs lower dir successful")
 	if err := createOverlayfsDirs(rootURL); err != nil {
 		zap.L().Error("create overlayfs uppper or work error", zap.String("error", err.Error()))
-		return
+		deleteDirs(rootURL)
+		return ErrCreateWorkSpace
 	}
-
+	zap.L().Info("create overlayfs upper and work dirs successful")
 	if err := mountOverlayfs(rootURL, mntURL); err != nil {
 		zap.L().Error("mount overlayfs error", zap.String("error", err.Error()))
-		return
+		return ErrCreateWorkSpace
 	}
+	zap.L().Info("mount overlayfs successful")
+	// mount volume
+	if volumeURL != "" {
+		mappingVolumePath := parseVolumeUrl(volumeURL)
+		if len(mappingVolumePath) == 2 && mappingVolumePath[0] != "" && mappingVolumePath[1] != "" {
+			if err := mountVolume(mntURL, mappingVolumePath); err != nil {
+				zap.L().Error("mount volume error", zap.String("error", err.Error()))
+				return ErrCreateWorkSpace
+			}
+		} else {
+			zap.L().Warn("input volume path don't correct")
+			return ErrCreateWorkSpace
+		}
+	}
+	zap.L().Info("mount volume successful")
+	return nil
 }
 
 // create overlayfs lower
@@ -105,16 +129,34 @@ func mountOverlayfs(rootURL, rootMnt string) error {
 	return nil
 }
 
-func DeleteWorkSpace(rootURL, mntURL string) {
+func DeleteWorkSpace(rootURL, mntURL, volumePath string) {
+	if volumePath != "" {
+		mappingVolumePath := parseVolumeUrl(volumePath)
+		if len(mappingVolumePath) == 2 && mappingVolumePath[0] != "" && mappingVolumePath[1] != "" {
+			if err := umountVolume(mntURL, mappingVolumePath[1]); err != nil {
+				zap.L().Error("umount volume error", zap.String("error", err.Error()))
+			}
+		}
+	}
 	if err := umountOverfs(mntURL); err != nil {
 		zap.L().Error("umount overlayfs error", zap.String("error", err.Error()))
-		return
 	}
 
 	if err := deleteDirs(rootURL); err != nil {
 		zap.L().Error("delete overlayfs upper or work error", zap.String("error", err.Error()))
-		return
 	}
+}
+
+
+// umount volume
+func umountVolume(rootMnt, volumePath string) error {
+	cmd := exec.Command("umount", filepath.Join(rootMnt, volumePath))
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // umount overlayfs
@@ -124,11 +166,11 @@ func umountOverfs(rootMnt string) error {
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("umount overlayfs error, error is %v", err)
+		return err
 	}
 
 	// delete mount point
-	if err := os.RemoveAll(rootMnt); err != nil {
+	if err := os.RemoveAll(rootMnt); err != nil && os.IsNotExist(err) {
 		return fmt.Errorf("remove dir %s is error, error is %v", rootMnt, err)
 	}
 	return nil
@@ -138,14 +180,42 @@ func umountOverfs(rootMnt string) error {
 func deleteDirs(rootURL string) error {
 	upper, work := filepath.Join(rootURL, "upper"), filepath.Join(rootURL, "work")
 	// upper
-	if err := os.RemoveAll(upper); err != nil {
+	if err := os.RemoveAll(upper); err != nil && os.IsNotExist(err) {
 		return fmt.Errorf("remove dir %s is error, error is %v", upper, err)
 	}
 	// work
-	if err := os.RemoveAll(work); err != nil {
+	if err := os.RemoveAll(work); err != nil && os.IsNotExist(err) {
 		return fmt.Errorf("remove dir %s is error, error is %v", work, err)
 	}
 	return nil
+}
+
+// mount volume
+func mountVolume(mntURL string, mappingVolumePath []string) error {
+	hostPath, containerPath := mappingVolumePath[0], mappingVolumePath[1]
+	if err := os.Mkdir(hostPath, 0777); err != nil && os.IsNotExist(err) {
+		return fmt.Errorf("mkdir dir %s error, error is %v", hostPath, err)
+	}
+
+	containerPath = filepath.Join(mntURL, containerPath)
+	if err := os.Mkdir(containerPath, 0777); err != nil && os.IsNotExist(err) {
+		return fmt.Errorf("mkdir dir %s error, error is %v", containerPath, err)
+	}
+
+	// mount
+	cmd := exec.Command("mount", "--bind", hostPath, containerPath)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// parse volumeurl
+func parseVolumeUrl(path string) []string {
+	mappingVolumePath := strings.Split(path, ":")
+	return mappingVolumePath
 }
 
 // anonymous pipe
