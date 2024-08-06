@@ -42,6 +42,9 @@ func ContainerInit() error {
 }
 
 // pivot_root
+// reference: 
+// 		1. https://github.com/opencontainers/runc/blob/ad5b481dace5cda8ca7c659b7717a15517333198/libcontainer/rootfs_linux.go#L1071
+// 		2. https://man7.org/linux/man-pages/man2/pivot_root.2.html#NOTES
 func pivotRoot(root string) error {
 	// prevents propagation to other mount namespaces
 	if err := syscall.Mount("", "/", "", syscall.MS_SLAVE | syscall.MS_REC, ""); err != nil {
@@ -58,6 +61,10 @@ func pivotRoot(root string) error {
 
 	if err := syscall.PivotRoot(".", "."); err != nil {
 		return fmt.Errorf("pivot_root error: %v", err)
+	}
+
+	if err := syscall.Unmount(".", syscall.MNT_DETACH); err != nil {
+		return fmt.Errorf("umount old mount error: %v", err)
 	}
 
 	if err := syscall.Chdir("/"); err != nil {
