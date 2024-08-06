@@ -25,8 +25,8 @@ func NewParentProcess(tty bool, volumePath string) (*exec.Cmd, *os.File, error) 
 	cmd := exec.Command(PrgPath, "init")
 	// set namespace
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWIPC | syscall.CLONE_NEWNET | syscall.CLONE_NEWPID |
-			syscall.CLONE_NEWNS,
+		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWIPC | syscall.CLONE_NEWNET | 
+		syscall.CLONE_NEWPID | syscall.CLONE_NEWNS,
 	}
 
 	if tty {
@@ -146,7 +146,6 @@ func DeleteWorkSpace(rootURL, mntURL, volumePath string) {
 		zap.L().Error("delete overlayfs upper or work error", zap.String("error", err.Error()))
 	}
 }
-
 
 // umount volume
 func umountVolume(rootMnt, volumePath string) error {
