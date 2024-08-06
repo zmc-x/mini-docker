@@ -24,6 +24,16 @@ var (
 		Args: cobra.MinimumNArgs(1),
 	}
 
+	commitCmd = &cobra.Command{
+		Use:   "commit",
+		Short: "commit container into image",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			runtime.CommitContainer(args[0])
+			return nil
+		},
+		Args: cobra.MinimumNArgs(1),
+	}
+
 	initCmd = &cobra.Command{
 		Use:    "init",
 		Short:  "init command init the container, don't call outside",

@@ -75,8 +75,8 @@ func NewWorkSpace(rootURL, mntURL, volumeURL string) error {
 			zap.L().Warn("input volume path don't correct")
 			return ErrCreateWorkSpace
 		}
+		zap.L().Info("mount volume successful")
 	}
-	zap.L().Info("mount volume successful")
 	return nil
 }
 
