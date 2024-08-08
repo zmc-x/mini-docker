@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"mini-docker/cgroup/subsystems"
 	"mini-docker/container"
 	"mini-docker/runtime"
@@ -13,12 +14,16 @@ var (
 		Use:   "run [Command]",
 		Short: "run command creates container with Namespace and Cgroup",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// check --ti and --d
+			if ti && daemon {
+				return fmt.Errorf("ti and d paramter can't both provided")
+			}
 			cfg := &subsystems.ResourceConfig{
 				MemoryLimit: m,
 				CpuSet:      cpuset,
 				CpuShare:    cpushare,
 			}
-			runtime.Run(ti, volume, args, cfg)
+			runtime.Run(ti, volume, args, cfg, name)
 			return nil
 		},
 		Args: cobra.MinimumNArgs(1),
@@ -42,12 +47,31 @@ var (
 			return container.ContainerInit()
 		},
 	}
+
+	psCmd = &cobra.Command{
+		Use: "ps",
+		Short: "list the container",
+		Run: func(cmd *cobra.Command, args []string) {
+			container.ListContainer()
+		},
+	}
+
+	logCmd = &cobra.Command{
+		Use: "log",
+		Short: "print logs of the container",
+		Run: func(cmd *cobra.Command, args []string) {
+			container.GetContainerLog(args[0])
+		},
+		Args: cobra.MinimumNArgs(1),
+	}
 )
 
 var (
 	// generic
 	ti     bool
 	volume string
+	daemon bool
+	name   string
 	// cgroup
 	m        string
 	cpuset   string
@@ -61,4 +85,6 @@ func init() {
 	runCmd.Flags().StringVar(&cpuset, "cpuset", "", "set the cgroup process can be used in the CPU and memory")
 	runCmd.Flags().StringVar(&cpushare, "cpushare", "", "set the cpu schedule for the processes in cgroup")
 	runCmd.Flags().StringVarP(&volume, "volume", "v", "", "set the volume of the container")
+	runCmd.Flags().BoolVar(&daemon, "d", false, "detach container")
+	runCmd.Flags().StringVar(&name, "name", "", "set the container name")
 }

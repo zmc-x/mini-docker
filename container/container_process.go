@@ -17,7 +17,7 @@ const PrgPath = "/proc/self/exe"
 var ErrCreateWorkSpace = errors.New("create overlayfs work space error")
 
 // parent process
-func NewParentProcess(tty bool, volumePath string) (*exec.Cmd, *os.File, error) {
+func NewParentProcess(tty bool, volumePath, containerName string) (*exec.Cmd, *os.File, error) {
 	r, w, err := createPipe()
 	if err != nil {
 		return nil, nil, err
@@ -33,6 +33,17 @@ func NewParentProcess(tty bool, volumePath string) (*exec.Cmd, *os.File, error) 
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
+	} else {
+		dirPath := fmt.Sprintf(DefaultInfoPath, containerName)
+		if err := os.MkdirAll(dirPath, 0644); err != nil {
+			return nil, nil, err
+		}
+		logPath := filepath.Join(dirPath, ContainerLog)
+		f, err := os.Create(logPath)
+		if err != nil {
+			return nil, nil, err
+		}
+		cmd.Stdout = f
 	}
 	cmd.ExtraFiles = []*os.File{r}
 	rootURL, mntURL := "/home/hellozmc/download", "/home/hellozmc/busybox"
