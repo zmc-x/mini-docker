@@ -30,26 +30,26 @@ func RecordContainer(pid int, args []string, containerName, containerID string) 
 	// write to config
 	cfg, err := json.Marshal(containerMeta)
 	if err != nil {
-		zap.L().Error("marshal container information error", zap.String("error", err.Error()))
+		zap.L().Sugar().Errorf("marshal container information error %v", err)
 		return "", err
 	}
 
 	dirPath := fmt.Sprintf(DefaultInfoPath, containerName)
 	if err := os.MkdirAll(dirPath, 0755); err != nil {
-		zap.L().Error("mkdir dir error", zap.String("error", err.Error()))
+		zap.L().Sugar().Errorf("mkdir dir %s error %v", dirPath, err)
 		return "", err
 	}
 
 	cfgPath := filepath.Join(dirPath, ConfigName)
 	f, err := os.Create(cfgPath)
 	if err != nil {
-		zap.L().Error("create config file error", zap.String("error", err.Error()))
+		zap.L().Sugar().Errorf("create config file error %v", err)
 		return "", err
 	}
 	defer f.Close()
 
 	if _, err := f.Write(cfg); err != nil {
-		zap.L().Error("write config file error", zap.String("error", err.Error()))
+		zap.L().Sugar().Errorf("write config file error %v", err)
 		return "", err
 	}
 	return containerName, nil

@@ -13,7 +13,7 @@ func GetContainerLog(containerName string) {
 	logPath := filepath.Join(dirPath, ContainerLog)
 	content, err := os.ReadFile(logPath)
 	if err != nil {
-		zap.L().Error("read the container error", zap.String("container name", containerName), zap.String("error", err.Error()))
+		zap.L().Sugar().Errorf("read the container %s error %v", containerName, err)
 		return
 	}
 	fmt.Print(string(content))

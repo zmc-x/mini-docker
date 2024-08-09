@@ -19,7 +19,7 @@ func ListContainer() {
 	// ls dirPath
 	files, err := os.ReadDir(dirPath)
 	if err != nil {
-		zap.L().Error("read the directory error", zap.String("error", err.Error()))
+		zap.L().Sugar().Errorf("read the directory error %v", err)
 		return
 	}
 	containers := []*ContainerMeta{}
@@ -29,7 +29,7 @@ func ListContainer() {
 			continue
 		}
 		if err != nil {
-			zap.L().Error("get container information error")
+			zap.L().Sugar().Error("get container information error")
 			continue
 		}
 		containers = append(containers, meta)
@@ -48,7 +48,7 @@ func ListContainer() {
 		)
 	}
 	if err := w.Flush(); err != nil {
-		zap.L().Error("flush error", zap.String("error", err.Error()))
+		zap.L().Sugar().Errorf("flush error %v", err)
 		return
 	}
 }
@@ -58,14 +58,14 @@ func getContainerInfo(file fs.DirEntry) (*ContainerMeta, error) {
 		cfgPath := fmt.Sprintf(DefaultInfoPath, file.Name())
 		f, err := os.ReadFile(filepath.Join(cfgPath, ConfigName))
 		if err != nil {
-			zap.L().Error("read the container config file error", zap.String("error", err.Error()))
+			zap.L().Sugar().Errorf("read the container config file error %v", err)
 			return nil, err
 		}
 		// decode
 		containerMeta := new(ContainerMeta)
 		err = json.Unmarshal(f, containerMeta)
 		if err != nil {
-			zap.L().Error("unmarshal json error", zap.String("error", err.Error()))
+			zap.L().Sugar().Error("unmarshal json error %v", err)
 			return nil, err
 		}
 		return containerMeta, nil

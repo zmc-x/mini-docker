@@ -14,7 +14,7 @@ import (
 func ExecContainer(containerName string, args []string) {
 	pid, err := getPidByContainerName(containerName)
 	if err != nil {
-		zap.L().Error("get pid error")
+		zap.L().Sugar().Error("get pid error %v", err)
 		return
 	}
 	command := strings.Join(args, " ")
@@ -39,12 +39,12 @@ func getPidByContainerName(containerName string) (int, error) {
 	cfgPath := filepath.Join(dirPath, ConfigName)
 	cfg, err := os.ReadFile(cfgPath)
 	if err != nil {
-		zap.L().Error("read the config file error", zap.String("error", err.Error()))
+		zap.L().Sugar().Errorf("read the config file error %v", err)
 		return -1, err
 	}
 	meta := new(ContainerMeta)
 	if err := json.Unmarshal(cfg, meta); err != nil {
-		zap.L().Error("unmarshal config file error", zap.String("error", err.Error()))
+		zap.L().Sugar().Errorf("unmarshal config file error %v", err)
 		return -1, err
 	}
 	return meta.PID, nil

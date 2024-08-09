@@ -14,28 +14,28 @@ import (
 func ContainerInit() error {
 	receiveCMD, err := readCMD()
 	if err != nil {
-		zap.L().Error("read command from pipe error", zap.String("error", err.Error()))
+		zap.L().Sugar().Errorf("read command from pipe error %v", err)
 		return fmt.Errorf("read command from pipe error %v", err)
 	}
 	if len(receiveCMD) == 0 {
-		zap.L().Error("run container get user command error")
+		zap.L().Sugar().Error("run container get user command error")
 		return fmt.Errorf("run container get user command error")
 	}
 
 	if err := setMount(); err != nil {
-		zap.L().Error("set mount is error", zap.String("error", err.Error()))
+		zap.L().Sugar().Errorf("set mount is error %v", err)
 		return fmt.Errorf("container set mount error")
 	}
 
 	path, err := exec.LookPath(receiveCMD[0])
 	if err != nil {
-		zap.L().Error("exec look path error", zap.String("error", err.Error()))
+		zap.L().Sugar().Errorf("exec look path error %v", err)
 		return err 
 	}
-	zap.L().Info("find path", zap.String("path", path))
+	zap.L().Sugar().Infof("find path %s", path)
 	// override
 	if err := syscall.Exec(path, receiveCMD, os.Environ()); err != nil {
-		zap.L().Error(err.Error())
+		zap.L().Sugar().Error(err.Error())
 		return err
 	}
 	return nil
@@ -78,7 +78,7 @@ func setMount() error {
 	if err != nil {
 		return err
 	}
-	zap.L().Info("current location was found", zap.String("path", pwd))
+	zap.L().Sugar().Infof("current location is %s", pwd)
 	if err := pivotRoot(pwd); err != nil {
 		return err
 	}

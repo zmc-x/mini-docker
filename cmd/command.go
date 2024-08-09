@@ -72,7 +72,7 @@ var (
 		Short: "exec a command into container",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if os.Getenv(container.ENV_EXEC_PID) != "" {
-				zap.L().Info("pid call back", zap.String("pid", fmt.Sprint(os.Getpid())))
+				zap.L().Sugar().Infof("pid call back pid %d", os.Getpid())
 				return nil
 			}
 			// check args length
