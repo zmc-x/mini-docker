@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const PrgPath = "/proc/self/exe"
+const prgPath = "/proc/self/exe"
 
 var ErrCreateWorkSpace = errors.New("create overlayfs work space error")
 
@@ -22,7 +22,7 @@ func NewParentProcess(tty bool, volumePath, containerName string) (*exec.Cmd, *o
 	if err != nil {
 		return nil, nil, err
 	}
-	cmd := exec.Command(PrgPath, "init")
+	cmd := exec.Command(prgPath, "init")
 	// set namespace
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWIPC | syscall.CLONE_NEWNET | 

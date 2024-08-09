@@ -10,8 +10,12 @@ import (
 	"go.uber.org/zap"
 )
 
-func Run(tty bool, volumePath string, args []string, cfg *subsystems.ResourceConfig) {
-	parent, writePipe, err := container.NewParentProcess(tty, volumePath)
+func Run(tty bool, volumePath string, args []string, cfg *subsystems.ResourceConfig, containerName string) {
+	var containerID string = container.GenerateContainerId()
+	if containerName == "" {
+		containerName = containerID
+	}
+	parent, writePipe, err := container.NewParentProcess(tty, volumePath, containerName)
 	if err != nil {
 		zap.L().Error("new parent process error", zap.String("error", err.Error()))
 		return
@@ -31,9 +35,8 @@ func Run(tty bool, volumePath string, args []string, cfg *subsystems.ResourceCon
 	}
 	parent.Wait()
 	// delete overlayf
-	rootURL, mntURL := "/home/hellozmc/download", "/home/hellozmc/busybox"
-	container.DeleteWorkSpace(rootURL, mntURL, volumePath)
-	os.Exit(0)
+	// rootURL, mntURL := "/home/hellozmc/download", "/home/hellozmc/busybox"
+	// container.DeleteWorkSpace(rootURL, mntURL, volumePath)	
 }
 
 // send command to child process(container)

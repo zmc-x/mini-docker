@@ -5,8 +5,10 @@ import (
 	"mini-docker/cgroup/subsystems"
 	"mini-docker/container"
 	"mini-docker/runtime"
+	"os"
 
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 var (
@@ -63,6 +65,23 @@ var (
 			container.GetContainerLog(args[0])
 		},
 		Args: cobra.MinimumNArgs(1),
+	}
+
+	execCmd = &cobra.Command{
+		Use: "exec",
+		Short: "exec a command into container",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if os.Getenv(container.ENV_EXEC_PID) != "" {
+				zap.L().Info("pid call back", zap.String("pid", fmt.Sprint(os.Getpid())))
+				return nil
+			}
+			// check args length
+			if len(args) < 2 {
+				return fmt.Errorf("missing container name or command")
+			}
+			container.ExecContainer(args[0], args[1: ])
+			return nil
+		},
 	}
 )
 
