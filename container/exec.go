@@ -49,3 +49,20 @@ func getPidByContainerName(containerName string) (int, error) {
 	}
 	return meta.PID, nil
 }
+
+
+func getContaineryContainerName(containerName string) (*ContainerMeta, error) {
+	dirPath := fmt.Sprintf(DefaultInfoPath, containerName)
+	cfgPath := filepath.Join(dirPath, ConfigName)
+	cfg, err := os.ReadFile(cfgPath)
+	if err != nil {
+		zap.L().Sugar().Errorf("read the config file error %v", err)
+		return nil, err
+	}
+	meta := new(ContainerMeta)
+	if err := json.Unmarshal(cfg, meta); err != nil {
+		zap.L().Sugar().Errorf("unmarshal config file error %v", err)
+		return nil, err
+	}
+	return meta, nil
+}

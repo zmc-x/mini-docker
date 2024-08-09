@@ -44,10 +44,10 @@ func Run(tty bool, volumePath string, args []string, cfg *subsystems.ResourceCon
 		if err := container.DeleteConfig(containerName); err != nil {
 			zap.L().Sugar().Warnf("delete container config failed %v", err)
 		}
+		// delete overlayf
+		rootURL, mntURL := "/home/hellozmc/download", "/home/hellozmc/busybox"
+		container.DeleteWorkSpace(rootURL, mntURL, volumePath)
 	}
-	// delete overlayf
-	// rootURL, mntURL := "/home/hellozmc/download", "/home/hellozmc/busybox"
-	// container.DeleteWorkSpace(rootURL, mntURL, volumePath)	
 }
 
 // send command to child process(container)

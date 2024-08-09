@@ -36,7 +36,7 @@ func ListContainer() {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 12, 1, 3, ' ', 0)
-	fmt.Fprint(w, "ID\tNAME\tPID\t\\STATUS\tCOMMAND\tCREATED\n")
+	fmt.Fprint(w, "ID\tNAME\tPID\tSTATUS\tCOMMAND\tCREATED\n")
 	for _, item := range containers {
 		fmt.Fprintf(w, "%s\t%s\t%d\t%s\t%s\t%s\n",
 			item.ID,
