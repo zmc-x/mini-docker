@@ -12,17 +12,17 @@ import (
 	"go.uber.org/zap"
 )
 
-const PrgPath = "/proc/self/exe"
+const prgPath = "/proc/self/exe"
 
 var ErrCreateWorkSpace = errors.New("create overlayfs work space error")
 
 // parent process
-func NewParentProcess(tty bool, volumePath string) (*exec.Cmd, *os.File, error) {
+func NewParentProcess(tty bool, volumePath, containerName string) (*exec.Cmd, *os.File, error) {
 	r, w, err := createPipe()
 	if err != nil {
 		return nil, nil, err
 	}
-	cmd := exec.Command(PrgPath, "init")
+	cmd := exec.Command(prgPath, "init")
 	// set namespace
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWIPC | syscall.CLONE_NEWNET | 
@@ -33,6 +33,17 @@ func NewParentProcess(tty bool, volumePath string) (*exec.Cmd, *os.File, error) 
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
+	} else {
+		dirPath := fmt.Sprintf(DefaultInfoPath, containerName)
+		if err := os.MkdirAll(dirPath, 0644); err != nil {
+			return nil, nil, err
+		}
+		logPath := filepath.Join(dirPath, ContainerLog)
+		f, err := os.Create(logPath)
+		if err != nil {
+			return nil, nil, err
+		}
+		cmd.Stdout = f
 	}
 	cmd.ExtraFiles = []*os.File{r}
 	rootURL, mntURL := "/home/hellozmc/download", "/home/hellozmc/busybox"
@@ -48,34 +59,34 @@ func NewParentProcess(tty bool, volumePath string) (*exec.Cmd, *os.File, error) 
 // lowerdir + upperdir + workdir + mergedir
 func NewWorkSpace(rootURL, mntURL, volumeURL string) error {
 	if err := createOverlayfsLower(rootURL); err != nil {
-		zap.L().Error("create overlayfs lower error", zap.String("error", err.Error()))
+		zap.L().Sugar().Errorf("create overlayfs lower error %v", err)
 		return ErrCreateWorkSpace
 	}
 	zap.L().Info("create overlayfs lower dir successful")
 	if err := createOverlayfsDirs(rootURL); err != nil {
-		zap.L().Error("create overlayfs uppper or work error", zap.String("error", err.Error()))
+		zap.L().Sugar().Errorf("create overlayfs uppper or work error %v", err)
 		deleteDirs(rootURL)
 		return ErrCreateWorkSpace
 	}
-	zap.L().Info("create overlayfs upper and work dirs successful")
+	zap.L().Sugar().Info("create overlayfs upper and work dirs successful")
 	if err := mountOverlayfs(rootURL, mntURL); err != nil {
-		zap.L().Error("mount overlayfs error", zap.String("error", err.Error()))
+		zap.L().Sugar().Errorf("mount overlayfs error %v", err)
 		return ErrCreateWorkSpace
 	}
-	zap.L().Info("mount overlayfs successful")
+	zap.L().Sugar().Info("mount overlayfs successful")
 	// mount volume
 	if volumeURL != "" {
 		mappingVolumePath := parseVolumeUrl(volumeURL)
 		if len(mappingVolumePath) == 2 && mappingVolumePath[0] != "" && mappingVolumePath[1] != "" {
 			if err := mountVolume(mntURL, mappingVolumePath); err != nil {
-				zap.L().Error("mount volume error", zap.String("error", err.Error()))
+				zap.L().Sugar().Errorf("mount volume error %v", err)
 				return ErrCreateWorkSpace
 			}
 		} else {
-			zap.L().Warn("input volume path don't correct")
+			zap.L().Sugar().Warn("input volume path don't correct")
 			return ErrCreateWorkSpace
 		}
-		zap.L().Info("mount volume successful")
+		zap.L().Sugar().Info("mount volume successful")
 	}
 	return nil
 }
@@ -86,7 +97,7 @@ func createOverlayfsLower(rootURL string) error {
 	busyboxTarURL := filepath.Join(rootURL, "busybox.tar")
 	exist, err := pathExists(busyboxURL)
 	if err != nil {
-		zap.L().Warn("faild to check whether dir exists", zap.String("dir", busyboxURL), zap.String("error", err.Error()))
+		zap.L().Sugar().Warnf("faild to check whether dir %s exists. %v", busyboxURL, err)
 	}
 	if !exist {
 		if err := os.Mkdir(busyboxURL, 0777); err != nil {
@@ -134,16 +145,16 @@ func DeleteWorkSpace(rootURL, mntURL, volumePath string) {
 		mappingVolumePath := parseVolumeUrl(volumePath)
 		if len(mappingVolumePath) == 2 && mappingVolumePath[0] != "" && mappingVolumePath[1] != "" {
 			if err := umountVolume(mntURL, mappingVolumePath[1]); err != nil {
-				zap.L().Error("umount volume error", zap.String("error", err.Error()))
+				zap.L().Sugar().Errorf("umount volume error %v", err)
 			}
 		}
 	}
 	if err := umountOverfs(mntURL); err != nil {
-		zap.L().Error("umount overlayfs error", zap.String("error", err.Error()))
+		zap.L().Sugar().Errorf("umount overlayfs error %v", err)
 	}
 
 	if err := deleteDirs(rootURL); err != nil {
-		zap.L().Error("delete overlayfs upper or work error", zap.String("error", err.Error()))
+		zap.L().Sugar().Errorf("delete overlayfs upper or work error %v", err)
 	}
 }
 
