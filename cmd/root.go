@@ -13,6 +13,6 @@ func Execute() error {return rootCmd.Execute()}
 func init() {
 	rootCmd.AddCommand(
 		initCmd, runCmd, commitCmd, psCmd, 
-		logCmd, execCmd, stopCmd,
+		logCmd, execCmd, stopCmd, removeCmd,
 	)
 }

@@ -92,6 +92,15 @@ var (
 			container.StopContainer(args[0])
 		},
 	}
+
+	removeCmd = &cobra.Command{
+		Use: "rm",
+		Short: "remove the container",
+		Args: cobra.MinimumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			container.RemoveContainer(args[0])
+		},
+	}
 )
 
 var (
