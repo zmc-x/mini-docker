@@ -4,6 +4,7 @@ import (
 	"mini-docker/cmd"
 	"mini-docker/logger"
 	_ "mini-docker/nsenter"
+	_ "mini-docker/config"
 
 	"go.uber.org/zap"
 )

@@ -10,6 +10,8 @@ type ContainerMeta struct {
 	CreateAt time.Time `json:"create_at"`
 	Command  string    `json:"command"`
 	Status   string    `json:"status"`
+	Volume   string    `json:"volume"`
+	Image    string    `json:"image"`
 }
 
 const (
