@@ -14,7 +14,7 @@ import (
 )
 
 // record the container information
-func RecordContainer(pid int, args []string, containerName, containerID, volume, imageName string) (string, error) {
+func RecordContainer(pid int, args, volume []string, containerName, containerID, imageName string) (string, error) {
 	createAt := time.Now()
 	command := strings.Join(args, " ")
 
@@ -25,7 +25,7 @@ func RecordContainer(pid int, args []string, containerName, containerID, volume,
 		Name:     containerName,
 		Status:   RUNING,
 		CreateAt: createAt,
-		Volume:   volume,
+		Volume:   strings.Join(volume, " "),
 		Image:    imageName,
 	}
 

@@ -10,12 +10,12 @@ import (
 	"go.uber.org/zap"
 )
 
-func Run(tty bool, volumePath string, args []string, cfg *subsystems.ResourceConfig, containerName string, imageName string) {
+func Run(tty bool, args, env, volumePath []string, cfg *subsystems.ResourceConfig, imageName, containerName string) {
 	var containerID string = container.GenerateContainerId()
 	if containerName == "" {
 		containerName = containerID
 	}
-	parent, writePipe, err := container.NewParentProcess(tty, volumePath, imageName, containerName)
+	parent, writePipe, err := container.NewParentProcess(tty, imageName, containerName, env, volumePath)
 	if err != nil {
 		zap.L().Sugar().Errorf("new parent process error %v", err)
 		return
@@ -25,7 +25,7 @@ func Run(tty bool, volumePath string, args []string, cfg *subsystems.ResourceCon
 		return
 	}
 	// record the container information
-	containerName, err = container.RecordContainer(parent.Process.Pid, args, containerName, containerID, volumePath, imageName)
+	containerName, err = container.RecordContainer(parent.Process.Pid, args, volumePath, containerName, containerID, imageName)
 	if err != nil {
 		zap.L().Sugar().Error("record the container information error")
 		return

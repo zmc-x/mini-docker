@@ -15,7 +15,7 @@ const prgPath = "/proc/self/exe"
 var ErrCreateWorkSpace = errors.New("create overlayfs work space error")
 
 // parent process
-func NewParentProcess(tty bool, volumePath, imageName, containerName string) (*exec.Cmd, *os.File, error) {
+func NewParentProcess(tty bool, imageName, containerName string, env, volumePath []string) (*exec.Cmd, *os.File, error) {
 	r, w, err := createPipe()
 	if err != nil {
 		return nil, nil, err
@@ -43,13 +43,14 @@ func NewParentProcess(tty bool, volumePath, imageName, containerName string) (*e
 		}
 		cmd.Stdout = f
 	}
-	cmd.ExtraFiles = []*os.File{r}
 
 	err = NewWorkSpace(imageName, containerName, volumePath)
 	if err != nil {
 		return nil, nil, err
 	}
+	cmd.ExtraFiles = []*os.File{r}
 	cmd.Dir = filepath.Join(config.ContainerPath, containerName, "merged")
+	cmd.Env = append(os.Environ(), env...)
 	return cmd, w, nil
 }
 

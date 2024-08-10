@@ -29,13 +29,29 @@ func ExecContainer(containerName string, args []string) {
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-
+	env, err := getPidEnv(pid)
+	if err != nil {
+		zap.L().Sugar().Errorf("get pid environment error %v", err)
+		return
+	}
 	// set environment
 	os.Setenv(ENV_EXEC_PID, fmt.Sprint(pid))
 	os.Setenv(ENV_EXEC_CMD, command)
+	cmd.Env = append(os.Environ(), env...)
 	if err := cmd.Run(); err != nil {
 		zap.L().Sugar().Errorf("exec container %s error %s", containerName, err)
 	}
+}
+
+func getPidEnv(pid int) ([]string, error) {
+	pidPath := fmt.Sprintf("/proc/%d/environ", pid)
+	f, err := os.ReadFile(pidPath)
+	if err != nil {
+		zap.L().Sugar().Errorf("read the file %s error %v", pidPath, err)
+		return nil, err
+	}
+	env := strings.Split(string(f), "\u0000")
+	return env, nil
 }
 
 func getPidByContainerName(containerName string) (int, error) {
@@ -159,7 +175,8 @@ func RemoveContainer(containerName string) {
 		zap.L().Sugar().Errorf("delete container config error %v", err)
 		return
 	}
-	DeleteWorkSpace(meta.Image, containerName, meta.Volume)
+	volume := strings.Split(meta.Volume, " ")
+	DeleteWorkSpace(meta.Image, containerName, volume)
 }
 
 func StopContainer(containerName string) {

@@ -26,7 +26,7 @@ var (
 				CpuShare:    cpushare,
 			}
 			imageName, command := args[0], args[1: ]
-			runtime.Run(ti, volume, command, cfg, name, imageName)
+			runtime.Run(ti, command, env, volume, cfg, imageName, name)
 			return nil
 		},
 		Args: cobra.MinimumNArgs(1),
@@ -107,9 +107,10 @@ var (
 var (
 	// generic
 	ti     bool
-	volume string
+	volume []string
 	daemon bool
 	name   string
+	env    []string
 	// cgroup
 	m        string
 	cpuset   string
@@ -122,7 +123,8 @@ func init() {
 	runCmd.Flags().StringVar(&m, "m", "", "set memory limit")
 	runCmd.Flags().StringVar(&cpuset, "cpuset", "", "set the cgroup process can be used in the CPU and memory")
 	runCmd.Flags().StringVar(&cpushare, "cpushare", "", "set the cpu schedule for the processes in cgroup")
-	runCmd.Flags().StringVarP(&volume, "volume", "v", "", "set the volume of the container")
-	runCmd.Flags().BoolVar(&daemon, "d", false, "detach container")
+	runCmd.Flags().StringArrayVarP(&volume, "volume", "v", []string{}, "set the volume of the container")
+	runCmd.Flags().BoolVarP(&daemon, "detach", "d", false, "detach container")
 	runCmd.Flags().StringVar(&name, "name", "", "set the container name")
+	runCmd.Flags().StringArrayVarP(&env, "env", "e", []string{}, "set environment")
 }

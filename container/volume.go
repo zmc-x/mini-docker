@@ -13,7 +13,7 @@ import (
 
 // overlayfs
 // lowerdir + upperdir + workdir + mergedir
-func NewWorkSpace(imageName, containerName, volumeURL string) error {
+func NewWorkSpace(imageName, containerName string, volumePath []string) error {
 	if err := createOverlayfsLower(imageName); err != nil {
 		zap.L().Sugar().Errorf("create overlayfs lower error %v", err)
 		return ErrCreateWorkSpace
@@ -30,20 +30,22 @@ func NewWorkSpace(imageName, containerName, volumeURL string) error {
 	}
 	zap.L().Sugar().Info("mount overlayfs successful")
 	// mount volume
-	if volumeURL != "" {
-		mappingVolumePath := parseVolumeUrl(volumeURL)
-		if len(mappingVolumePath) == 2 && mappingVolumePath[0] != "" && mappingVolumePath[1] != "" {
-			if err := mountVolume(containerName, mappingVolumePath); err != nil {
-				deleteDirs(imageName, containerName)
-				zap.L().Sugar().Errorf("mount volume error %v", err)
+	for _, volumeUrl := range volumePath {
+		if volumeUrl != "" {
+			mappingVolumePath := parseVolumeUrl(volumeUrl)
+			if len(mappingVolumePath) == 2 && mappingVolumePath[0] != "" && mappingVolumePath[1] != "" {
+				if err := mountVolume(containerName, mappingVolumePath); err != nil {
+					DeleteWorkSpace(imageName, containerName, volumePath)
+					zap.L().Sugar().Errorf("mount volume error %v", err)
+					return ErrCreateWorkSpace
+				}
+			} else {
+				DeleteWorkSpace(imageName, containerName, volumePath)
+				zap.L().Sugar().Warn("input volume path don't correct")
 				return ErrCreateWorkSpace
 			}
-		} else {
-			deleteDirs(imageName, containerName)
-			zap.L().Sugar().Warn("input volume path don't correct")
-			return ErrCreateWorkSpace
+			zap.L().Sugar().Info("mount volume successful")
 		}
-		zap.L().Sugar().Info("mount volume successful")
 	}
 	return nil
 }
@@ -51,7 +53,7 @@ func NewWorkSpace(imageName, containerName, volumeURL string) error {
 // create overlayfs lower
 func createOverlayfsLower(imageName string) error {
 	imageURL := filepath.Join(config.ImagePath, imageName)
-	imageTarURL := filepath.Join(config.ImagePath, imageName + ".tar")
+	imageTarURL := filepath.Join(config.ImagePath, imageName+".tar")
 	exist, err := fileExists(imageURL)
 	if err != nil {
 		zap.L().Sugar().Warnf("faild to check whether dir %s exists. %v", imageURL, err)
@@ -63,14 +65,13 @@ func createOverlayfsLower(imageName string) error {
 	}
 	exist, err = fileExists(imageTarURL)
 	if err != nil || !exist {
-		imageTarURL = filepath.Join(config.ImagePath, imageName + ".tar.gz")
+		imageTarURL = filepath.Join(config.ImagePath, imageName+".tar.gz")
 	}
 	if _, err := exec.Command("tar", "xvf", imageTarURL, "-C", imageURL).CombinedOutput(); err != nil {
 		return fmt.Errorf("tar %s error, error is %v", imageTarURL, err)
 	}
 	return nil
 }
-
 
 // create overlayfs upper and work
 func createOverlayfsDirs(containerName string) error {
@@ -90,9 +91,9 @@ func createOverlayfsDirs(containerName string) error {
 
 // mount overlayfs
 func mountOverlayfs(imageName, containerName string) error {
-	imageUrl:= filepath.Join(config.ImagePath, imageName)
+	imageUrl := filepath.Join(config.ImagePath, imageName)
 	containerUrl := filepath.Join(config.ContainerPath, containerName)
-	
+
 	mnt := filepath.Join(containerUrl, "merged")
 	upper := filepath.Join(containerUrl, "diff")
 	work := filepath.Join(containerUrl, "work")
@@ -112,15 +113,9 @@ func mountOverlayfs(imageName, containerName string) error {
 	return nil
 }
 
-func DeleteWorkSpace(imageName, containerName, volumePath string) {
-	if volumePath != "" {
-		mappingVolumePath := parseVolumeUrl(volumePath)
-		if len(mappingVolumePath) == 2 && mappingVolumePath[0] != "" && mappingVolumePath[1] != "" {
-			if err := umountVolume(containerName, mappingVolumePath[1]); err != nil {
-				zap.L().Sugar().Errorf("umount volume error %v", err)
-			}
-		}
-	}
+func DeleteWorkSpace(imageName, containerName string, volumePath []string) {
+	umountVolume(containerName, volumePath)
+
 	if err := umountOverfs(containerName); err != nil {
 		zap.L().Sugar().Errorf("umount overlayfs error %v", err)
 	}
@@ -131,14 +126,20 @@ func DeleteWorkSpace(imageName, containerName, volumePath string) {
 }
 
 // umount volume
-func umountVolume(containerName, volumePath string) error {
-	cmd := exec.Command("umount", filepath.Join(config.ContainerPath, containerName, "merged", volumePath))
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	if err := cmd.Run(); err != nil {
-		return err
+func umountVolume(containerName string, volumePath []string) {
+	for _, volumeUrl := range volumePath {
+		if volumeUrl != "" {
+			mappingVolumePath := parseVolumeUrl(volumeUrl)
+			if len(mappingVolumePath) == 2 && mappingVolumePath[0] != "" && mappingVolumePath[1] != "" {
+					cmd := exec.Command("umount", filepath.Join(config.ContainerPath, containerName, "merged", mappingVolumePath[1]))
+					cmd.Stderr = os.Stderr
+					cmd.Stdout = os.Stdout
+					if err := cmd.Run(); err != nil {
+						zap.L().Sugar().Errorf("umount volume error %v", err)
+					}
+			}
+		}
 	}
-	return nil
 }
 
 // umount overlayfs
@@ -202,7 +203,6 @@ func parseVolumeUrl(path string) []string {
 	mappingVolumePath := strings.Split(path, ":")
 	return mappingVolumePath
 }
-
 
 func fileExists(path string) (bool, error) {
 	if _, err := os.Stat(path); err == nil {
