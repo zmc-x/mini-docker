@@ -21,13 +21,11 @@ func NewWorkSpace(imageName, containerName, volumeURL string) error {
 	zap.L().Info("create overlayfs lower dir successful")
 	if err := createOverlayfsDirs(containerName); err != nil {
 		zap.L().Sugar().Errorf("create overlayfs uppper or work error %v", err)
-		deleteDirs(imageName, containerName)
 		return ErrCreateWorkSpace
 	}
 	zap.L().Sugar().Info("create overlayfs upper and work dirs successful")
 	if err := mountOverlayfs(imageName, containerName); err != nil {
 		zap.L().Sugar().Errorf("mount overlayfs error %v", err)
-		deleteDirs(imageName, containerName)
 		return ErrCreateWorkSpace
 	}
 	zap.L().Sugar().Info("mount overlayfs successful")
@@ -77,14 +75,14 @@ func createOverlayfsLower(imageName string) error {
 // create overlayfs upper and work
 func createOverlayfsDirs(containerName string) error {
 	containerDir := filepath.Join(config.ContainerPath, containerName)
-	if err := os.Mkdir(containerDir, 0777); err != nil && !os.IsExist(err) {
+	if err := os.Mkdir(containerDir, 0777); err != nil {
 		return fmt.Errorf("mkdir %s failed, error is %v", containerDir, err)
 	}
 	diff, work := filepath.Join(containerDir, "diff"), filepath.Join(containerDir, "work")
-	if err := os.Mkdir(diff, 0777); err != nil && !os.IsExist(err) {
+	if err := os.Mkdir(diff, 0777); err != nil {
 		return fmt.Errorf("mkdir %s failed, error is %v", diff, err)
 	}
-	if err := os.Mkdir(work, 0777); err != nil && !os.IsExist(err) {
+	if err := os.Mkdir(work, 0777); err != nil {
 		return fmt.Errorf("mkdir %s failed, error is %v", work, err)
 	}
 	return nil
@@ -99,7 +97,7 @@ func mountOverlayfs(imageName, containerName string) error {
 	upper := filepath.Join(containerUrl, "diff")
 	work := filepath.Join(containerUrl, "work")
 
-	if err := os.Mkdir(mnt, 0777); err != nil && !os.IsExist(err) {
+	if err := os.Mkdir(mnt, 0777); err != nil {
 		return fmt.Errorf("mkdir %s failed, error is %v", mnt, err)
 	}
 
