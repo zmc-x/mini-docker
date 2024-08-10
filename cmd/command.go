@@ -13,7 +13,7 @@ import (
 
 var (
 	runCmd = &cobra.Command{
-		Use:   "run [Command]",
+		Use:   "run",
 		Short: "run command creates container with Namespace and Cgroup",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// check --ti and --d
@@ -25,7 +25,8 @@ var (
 				CpuSet:      cpuset,
 				CpuShare:    cpushare,
 			}
-			runtime.Run(ti, volume, args, cfg, name)
+			imageName, command := args[0], args[1: ]
+			runtime.Run(ti, volume, command, cfg, name, imageName)
 			return nil
 		},
 		Args: cobra.MinimumNArgs(1),
@@ -35,10 +36,10 @@ var (
 		Use:   "commit",
 		Short: "commit container into image",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			runtime.CommitContainer(args[0])
+			runtime.CommitContainer(args[0], args[1])
 			return nil
 		},
-		Args: cobra.MinimumNArgs(1),
+		Args: cobra.MinimumNArgs(2),
 	}
 
 	initCmd = &cobra.Command{
