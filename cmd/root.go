@@ -14,5 +14,6 @@ func init() {
 	rootCmd.AddCommand(
 		initCmd, runCmd, commitCmd, psCmd, 
 		logCmd, execCmd, stopCmd, removeCmd,
+		networkCmd,
 	)
 }
