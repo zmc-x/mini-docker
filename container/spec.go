@@ -24,7 +24,7 @@ const (
 	// constant
 	ConfigName      = "config.json"
 	ContainerLog    = "container.log"
-	DefaultInfoPath = "/var/run/mini-docker/%s/"
+	DefaultInfoPath = "/var/run/mini-docker/container/%s/"
 
 	// environment
 	ENV_EXEC_PID = "mini_docker_pid"

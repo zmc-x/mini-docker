@@ -165,8 +165,8 @@ func configEndPointIPAndRoute(ep *EndPoint, containerMeta *container.ContainerMe
 
 	// restore namespace
 	defer enterNetNamespace(&peerLink, containerMeta)()
-
-	interfaceIP := ep.IPRange
+	// net namespace ip
+	var interfaceIP net.IPNet = *ep.IPRange
 	interfaceIP.IP = *ep.IPAddress
 
 	if err := setInterfaceIP(ep.Device.PeerName, interfaceIP.String()); err != nil {
@@ -187,7 +187,7 @@ func configEndPointIPAndRoute(ep *EndPoint, containerMeta *container.ContainerMe
 		Gw:        ep.IPRange.IP,
 		Dst:       cidr,
 	}
-	// equivalent to: route add default dev {device}
+	// equivalent to: route add default gw {gateway}
 	if err := netlink.RouteAdd(defaultRoute); err != nil {
 		return fmt.Errorf("add route error %v", err)
 	}

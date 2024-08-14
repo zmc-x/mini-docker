@@ -88,8 +88,8 @@ func (m *IPAM) storage() error {
 
 // allocate ip address
 func (m *IPAM) Allocate(subnet *net.IPNet) (*net.IP, error) {
-	subnetIP, subnet, _ := net.ParseCIDR(subnet.String())
-	subnetIP = subnetIP.To4()
+	_, subnet, _ = net.ParseCIDR(subnet.String())
+	subnetIP := subnet.IP.To4()
 	one, bits := subnet.Mask.Size()
 	delta := bits - one 
 	var cnt, total int64 
