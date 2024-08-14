@@ -26,6 +26,9 @@ var (
 		Short: "remove container network",
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := network.Init(); err != nil {
+				return fmt.Errorf("net work init error %v", err)
+			}
 			if err := network.RemoveNetwork(args[0]); err != nil {
 				return fmt.Errorf("remove network error %v", err)
 			}

@@ -34,7 +34,7 @@ type NetWork struct {
 type EndPoint struct {
 	ID          string            `json:"id"`
 	Device      netlink.Veth      `json:"device"`
-	IPAddress   *net.IP      `json:"ip"`
+	IPAddress   *net.IP           `json:"ip"`
 	MACAddress  *net.HardwareAddr `json:"mac"`
 	PortMapping []string          `json:"port_map"`
 	*NetWork
@@ -47,5 +47,5 @@ var (
 
 const (
 	ipamDefaultAllocatorPath = "/var/run/mini-docker/network/ipam/subnet.json"
-	defaultNetworkPath = "/var/run/mini-docker/network"
+	defaultNetworkPath       = "/var/run/mini-docker/network"
 )

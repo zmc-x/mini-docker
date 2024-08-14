@@ -70,8 +70,7 @@ func getPidByContainerName(containerName string) (int, error) {
 	return meta.PID, nil
 }
 
-
-func getContaineryContainerName(containerName string) (*ContainerMeta, error) {
+func GetContainerByName(containerName string) (*ContainerMeta, error) {
 	dirPath := fmt.Sprintf(DefaultInfoPath, containerName)
 	cfgPath := filepath.Join(dirPath, ConfigName)
 	cfg, err := os.ReadFile(cfgPath)
@@ -109,7 +108,7 @@ func ListContainer() {
 		}
 		containers = append(containers, meta)
 	}
-	
+
 	w := tabwriter.NewWriter(os.Stdout, 12, 1, 3, ' ', 0)
 	fmt.Fprint(w, "ID\tNAME\tPID\tSTATUS\tCOMMAND\tCREATED\n")
 	for _, item := range containers {
@@ -160,12 +159,12 @@ func GetContainerLog(containerName string) {
 }
 
 func RemoveContainer(containerName string) {
-	meta, err := getContaineryContainerName(containerName)
+	meta, err := GetContainerByName(containerName)
 	if err != nil {
 		zap.L().Sugar().Errorf("get container meta by container name error %v", err)
 		return
 	}
-	
+
 	if meta.Status != STOP {
 		zap.L().Sugar().Errorf("the container %s status isn't stopped", containerName)
 		return
@@ -185,7 +184,7 @@ func StopContainer(containerName string) {
 		zap.L().Sugar().Errorf("get pid by container name error %v", err)
 		return
 	}
-	
+
 	err = syscall.Kill(pid, syscall.SIGTERM)
 	if err != nil {
 		zap.L().Sugar().Errorf("kill the pid %d error %v", pid, err)
@@ -193,7 +192,7 @@ func StopContainer(containerName string) {
 	}
 
 	// override the config.json
-	meta, err := getContaineryContainerName(containerName)
+	meta, err := GetContainerByName(containerName)
 	if err != nil {
 		zap.L().Sugar().Errorf("get container meta by container name error %v", err)
 		return

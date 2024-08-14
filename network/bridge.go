@@ -39,7 +39,10 @@ func (b *Bridge) Delete(network NetWork) error {
 	if err != nil {
 		return err
 	}
-	return netlink.LinkDel(device)
+	if err := netlink.LinkDel(device); err != nil {
+		return err
+	}
+	return removeIPTables(bridgeName, network.IPRange)
 }
 
 func (b *Bridge) Connect(network *NetWork, endPoint *EndPoint) error {
@@ -158,6 +161,17 @@ func setIPTables(bridgeName string, subnet *net.IPNet) error {
 	if err != nil {
 		zap.L().Sugar().Errorf("iptables output %v", output)
 		return fmt.Errorf("set iptables error %v", err)
+	}
+	return nil
+}
+
+func removeIPTables(bridgeName string, subnet *net.IPNet) error {
+	iptablesArgs := fmt.Sprintf("-t nat -D POSTROUTING -s %s ! -o %s -j MASQUERADE", subnet.String(), bridgeName)
+	cmd := exec.Command("iptables", strings.Split(iptablesArgs, " ")...)
+	output, err := cmd.Output()
+	if err != nil {
+		zap.L().Sugar().Errorf("iptables output %v", output)
+		return fmt.Errorf("remove iptables error %v", err)
 	}
 	return nil
 }

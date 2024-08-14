@@ -130,6 +130,7 @@ func (m *IPAM) Allocate(subnet *net.IPNet) (*net.IP, error) {
 	err = m.storage()
 	if err != nil {
 		zap.L().Sugar().Warnf("storage error %v", err)
+		return nil, fmt.Errorf("ipam storage error %v", err)
 	}
 	return nil, fmt.Errorf("the subnet don't have enough ip address")
 }
@@ -140,6 +141,7 @@ func (m *IPAM) Release(subnet *net.IPNet, oldIP *net.IP) error {
 	err := m.load()
 	if err != nil {
 		zap.L().Sugar().Warnf("load the ipam config error %v", err)
+		return err
 	}
 
 	_, subnet, _ = net.ParseCIDR(subnet.String())
@@ -162,6 +164,27 @@ func (m *IPAM) Release(subnet *net.IPNet, oldIP *net.IP) error {
 	err = m.storage()
 	if err != nil {
 		zap.L().Sugar().Warnf("storage error %v", err)
+		return err
 	}
 	return nil
 } 
+
+// remove subnet
+func (m *IPAM) RemoveSubNet(subnet *net.IPNet) error {
+	m.Subnets = &map[string][]int64{}
+	err := m.load()
+	if err != nil {
+		zap.L().Sugar().Warnf("load the ipam config error %v", err)
+		return err
+	}
+
+	_, subnet, _ = net.ParseCIDR(subnet.String())
+	delete(*m.Subnets, subnet.String())
+	
+	err = m.storage()
+	if err != nil {
+		zap.L().Sugar().Warnf("storage error %v", err)
+		return err
+	}
+	return nil
+}

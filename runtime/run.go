@@ -59,6 +59,9 @@ func Run(tty bool, args, env, volumePath, port []string, cfg *subsystems.Resourc
 	}
 	if tty {
 		parent.Wait()
+		if err := network.DisConnect(containerName); err != nil {
+			zap.L().Sugar().Warnf("container network disconnect failed %v", err)
+		}
 		if err := container.DeleteConfig(containerName); err != nil {
 			zap.L().Sugar().Warnf("delete container config failed %v", err)
 		}

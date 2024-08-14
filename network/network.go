@@ -88,8 +88,8 @@ func RemoveNetwork(networkName string) error {
 	if !ok {
 		return fmt.Errorf("the network %s don't exist", networkName)
 	}
-	// release gateway ip
-	err := ipamAllocator.Release(nw.IPRange, &nw.IPRange.IP)
+	// release subnet
+	err := ipamAllocator.RemoveSubNet(nw.IPRange)
 	if err != nil {
 		return fmt.Errorf("release ip error %v", err)
 	}
@@ -128,11 +128,30 @@ func Connect(networkName string, containerMeta *container.ContainerMeta) error {
 	if err != nil {
 		return err
 	}
-	return configPortMap(ep)
+
+	err = configPortMap(ep)
+	if err != nil {
+		return err
+	}
+	// write network information to config
+	var containerIP net.IPNet = *nw.IPRange
+	containerIP.IP = *ip
+	return container.WriteNetwork(containerIP, containerMeta.Name)
 }
 
-func DisConnect(networkName string, containerMeta *container.ContainerMeta) error {
-	return nil
+// DisConnect to release the ip
+func DisConnect(containerName string) error {
+	containerMeta, err := container.GetContainerByName(containerName)
+	if err != nil {
+		zap.L().Sugar().Errorf("get container information error %v", err)
+		return err
+	}
+	ip := containerMeta.IP
+	if ip == "" {
+		return nil
+	}
+	containerIP, subnet, _ := net.ParseCIDR(ip)
+	return ipamAllocator.Release(subnet, &containerIP)
 }
 
 // config port map

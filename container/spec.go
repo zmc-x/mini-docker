@@ -13,6 +13,7 @@ type ContainerMeta struct {
 	Volume   string    `json:"volume,omitempty"`
 	Image    string    `json:"image"`
 	Port     string    `json:"port,omitempty"`
+	IP       string    `json:"ip,omitempty"`
 }
 
 const (

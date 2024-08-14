@@ -5,6 +5,7 @@ import (
 	"mini-docker/cgroup/subsystems"
 	netcmd "mini-docker/cmd/network"
 	"mini-docker/container"
+	"mini-docker/network"
 	"mini-docker/runtime"
 	"os"
 
@@ -100,6 +101,7 @@ var (
 		Short: "remove the container",
 		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
+			network.DisConnect(args[0])
 			container.RemoveContainer(args[0])
 		},
 	}
