@@ -10,8 +10,10 @@ type ContainerMeta struct {
 	CreateAt time.Time `json:"create_at"`
 	Command  string    `json:"command"`
 	Status   string    `json:"status"`
-	Volume   string    `json:"volume"`
+	Volume   string    `json:"volume,omitempty"`
 	Image    string    `json:"image"`
+	Port     string    `json:"port,omitempty"`
+	IP       string    `json:"ip,omitempty"`
 }
 
 const (
@@ -23,7 +25,7 @@ const (
 	// constant
 	ConfigName      = "config.json"
 	ContainerLog    = "container.log"
-	DefaultInfoPath = "/var/run/mini-docker/%s/"
+	DefaultInfoPath = "/var/run/mini-docker/container/%s/"
 
 	// environment
 	ENV_EXEC_PID = "mini_docker_pid"

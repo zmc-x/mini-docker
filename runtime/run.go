@@ -4,13 +4,14 @@ import (
 	"mini-docker/cgroup"
 	"mini-docker/cgroup/subsystems"
 	"mini-docker/container"
+	"mini-docker/network"
 	"os"
 	"strings"
 
 	"go.uber.org/zap"
 )
 
-func Run(tty bool, args, env, volumePath []string, cfg *subsystems.ResourceConfig, imageName, containerName string) {
+func Run(tty bool, args, env, volumePath, port []string, cfg *subsystems.ResourceConfig, imageName, containerName, net string) {
 	var containerID string = container.GenerateContainerId()
 	if containerName == "" {
 		containerName = containerID
@@ -25,7 +26,7 @@ func Run(tty bool, args, env, volumePath []string, cfg *subsystems.ResourceConfi
 		return
 	}
 	// record the container information
-	containerName, err = container.RecordContainer(parent.Process.Pid, args, volumePath, containerName, containerID, imageName)
+	containerName, err = container.RecordContainer(parent.Process.Pid, args, volumePath, port, containerName, containerID, imageName)
 	if err != nil {
 		zap.L().Sugar().Error("record the container information error")
 		return
@@ -35,12 +36,32 @@ func Run(tty bool, args, env, volumePath []string, cfg *subsystems.ResourceConfi
 	defer cgroupManager.Destroy()
 	cgroupManager.Set(cfg)
 	cgroupManager.Apply(parent.Process.Pid)
+	// set network
+	if net != "" {
+		if err := network.Init(); err != nil {
+			zap.L().Sugar().Errorf("init network error %v", err)
+			return 
+		}
+		containerMeta := &container.ContainerMeta{
+			PID:  parent.Process.Pid,
+			ID:   containerID,
+			Name: containerName,
+			Port: strings.Join(port, " "),
+		}
+		if err := network.Connect(net, containerMeta); err != nil {
+			zap.L().Sugar().Errorf("container connect network error %v", err)
+			return
+		}
+	}
 	err = sendInitCMD(args, writePipe)
 	if err != nil {
 		zap.L().Sugar().Errorf("don't send command to child process. %v", err)
 	}
 	if tty {
 		parent.Wait()
+		if err := network.DisConnect(containerName); err != nil {
+			zap.L().Sugar().Warnf("container network disconnect failed %v", err)
+		}
 		if err := container.DeleteConfig(containerName); err != nil {
 			zap.L().Sugar().Warnf("delete container config failed %v", err)
 		}
