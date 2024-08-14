@@ -15,10 +15,10 @@ import (
 
 var (
 	runCmd = &cobra.Command{
-		Use:   "run",
+		Use:   "run imageName containerCommand",
 		Short: "run command creates container with Namespace and Cgroup",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// check --ti and --d
+			// check --ti and -d
 			if ti && daemon {
 				return fmt.Errorf("ti and d paramter can't both provided")
 			}
@@ -35,7 +35,7 @@ var (
 	}
 
 	commitCmd = &cobra.Command{
-		Use:   "commit",
+		Use:   "commit containerName newImageName",
 		Short: "commit container into image",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			runtime.CommitContainer(args[0], args[1])
@@ -62,7 +62,7 @@ var (
 	}
 
 	logCmd = &cobra.Command{
-		Use:   "log",
+		Use:   "log containerName",
 		Short: "print logs of the container",
 		Run: func(cmd *cobra.Command, args []string) {
 			container.GetContainerLog(args[0])
@@ -71,7 +71,7 @@ var (
 	}
 
 	execCmd = &cobra.Command{
-		Use:   "exec",
+		Use:   "exec containerName command",
 		Short: "exec a command into container",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if os.Getenv(container.ENV_EXEC_PID) != "" {
@@ -88,7 +88,7 @@ var (
 	}
 
 	stopCmd = &cobra.Command{
-		Use:   "stop",
+		Use:   "stop containerName",
 		Short: "stop the container",
 		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
@@ -97,7 +97,7 @@ var (
 	}
 
 	removeCmd = &cobra.Command{
-		Use:   "rm",
+		Use:   "rm containerName",
 		Short: "remove the container",
 		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {

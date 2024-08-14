@@ -9,7 +9,7 @@ import (
 
 var (
 	CreateCmd = &cobra.Command{
-		Use: "create",
+		Use: "create networkName",
 		Short: "create container network",
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -22,7 +22,7 @@ var (
 	}
 
 	RemoveCmd = &cobra.Command{
-		Use: "remove",
+		Use: "remove networkName",
 		Short: "remove container network",
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
